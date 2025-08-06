@@ -34,17 +34,7 @@ func Read() (Config, error) {
 
 func (c *Config) SetUser(name string) error {
 	c.CurrentUserName = name
-
-	jsonConfig, err := json.Marshal(c)
-	if err != nil {
-		return err
-	}
-
-	configFilePath, err := getConfigFilePath()
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(configFilePath, jsonConfig, os.ModePerm)
+	return write(*c)
 }
 
 func getConfigFilePath() (string, error) {
@@ -55,4 +45,23 @@ func getConfigFilePath() (string, error) {
 
 	configFilePath := homeDir + "/" + configFileName
 	return configFilePath, nil
+}
+
+func write(conf Config) error {
+	configFilePath, err := getConfigFilePath()
+	if err != nil {
+		return err
+	}
+
+	configFile, err := os.Create(configFilePath)
+	if err != nil {
+		return err
+	}
+	defer configFile.Close()
+
+	if err := json.NewEncoder(configFile).Encode(conf); err != nil {
+		return err
+	}
+
+	return nil
 }
