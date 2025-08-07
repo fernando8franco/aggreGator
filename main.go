@@ -1,14 +1,18 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"os"
 
 	"github.com/fernando8franco/aggreGator/internal/config"
+	"github.com/fernando8franco/aggreGator/internal/database"
+	_ "github.com/lib/pq"
 )
 
 type state struct {
-	Conf *config.Config
+	cfg *config.Config
+	db  *database.Queries
 }
 
 func main() {
@@ -17,8 +21,16 @@ func main() {
 		log.Fatalf("error reading config: %v", err)
 	}
 
+	db, err := sql.Open("postgres", conf.DBUrl)
+	if err != nil {
+		log.Fatalf("error in the database connection: %w", err)
+	}
+	defer db.Close()
+	dbQueries := database.New(db)
+
 	programState := state{
-		Conf: &conf,
+		cfg: &conf,
+		db:  dbQueries,
 	}
 
 	commands := commands{
@@ -26,6 +38,7 @@ func main() {
 	}
 
 	commands.Register("login", HandlerLogin)
+	commands.Register("register", HandlerRegister)
 
 	if len(os.Args) < 2 {
 		log.Fatal("not enough arguments were provided")
