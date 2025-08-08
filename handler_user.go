@@ -58,6 +58,23 @@ func HandlerRegister(s *state, cmd command) error {
 	return nil
 }
 
+func HandlerUsers(s *state, cmd command) error {
+	users, err := s.db.GetUsers(context.Background())
+	if err != nil {
+		return fmt.Errorf("couldn't get the users: %w", err)
+	}
+
+	for _, user := range users {
+		if user.Name == s.cfg.CurrentUserName {
+			fmt.Printf("* %s (current)\n", user.Name)
+		} else {
+			fmt.Printf("* %s\n", user.Name)
+		}
+	}
+
+	return nil
+}
+
 func printUser(user database.User) {
 	fmt.Printf(" - ID:   %v\n", user.ID)
 	fmt.Printf(" - Name: %v\n", user.Name)
