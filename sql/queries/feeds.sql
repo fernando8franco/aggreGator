@@ -12,3 +12,8 @@ SELECT
 FROM feeds 
 JOIN users ON feeds.user_id = users.id
 ORDER BY feeds.created_at;
+
+-- name: GetFeedID :one
+SELECT id
+FROM feeds
+WHERE url = $1;

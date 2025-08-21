@@ -9,14 +9,9 @@ import (
 	"github.com/google/uuid"
 )
 
-func HandlerAddFeed(s *state, cmd command) error {
+func HandlerAddFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.Arguments) != 2 {
 		return fmt.Errorf("usage: %v \"<name>\" \"<url>\"", cmd.Name)
-	}
-
-	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("couldn't get the user: %w", err)
 	}
 
 	feedName := cmd.Arguments[0]
@@ -35,8 +30,23 @@ func HandlerAddFeed(s *state, cmd command) error {
 		return fmt.Errorf("couldn't create user: %w", err)
 	}
 
+	newFeedFollow := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	}
+	feedFollow, err := s.db.CreateFeedFollow(context.Background(), newFeedFollow)
+	if err != nil {
+		return fmt.Errorf("couldn't create feed follow: %w", err)
+	}
+
 	fmt.Println("Feed created succesfully:")
 	printFeed(feed)
+	fmt.Println("Feed Follow created succesfully:")
+	fmt.Printf("* User Name:     %s\n", feedFollow.UserName)
+	fmt.Printf("* Feed Name:     %s\n", feedFollow.FeedName)
 
 	return nil
 }
