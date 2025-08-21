@@ -39,17 +39,32 @@ func HandlerFollow(s *state, cmd command, user database.User) error {
 	return nil
 }
 
+func HandlerUnfollow(s *state, cmd command, user database.User) error {
+	if len(cmd.Arguments) != 1 {
+		return fmt.Errorf("usage: %v <url>", cmd.Name)
+	}
+
+	url := cmd.Arguments[0]
+	deleteFeedFollow := database.DeleteFeedFollowParams{
+		UserID: user.ID,
+		Url:    url,
+	}
+	err := s.db.DeleteFeedFollow(context.Background(), deleteFeedFollow)
+	if err != nil {
+		return fmt.Errorf("couldn't delete the feed follow from the database")
+	}
+
+	return nil
+}
+
 func HandlerFollowing(s *state, cmd command, user database.User) error {
 	feedsFollows, err := s.db.GetFeedFollowsForUser(context.Background(), user.ID)
 	if err != nil {
 		return fmt.Errorf("couldn't get the feeds follows: %w", err)
 	}
 
-	fmt.Println("====================================")
 	for _, feedFollow := range feedsFollows {
-		fmt.Printf("* User Name:     %s\n", feedFollow.UserName)
 		fmt.Printf("* Feed Name:     %s\n", feedFollow.FeedName)
-		fmt.Println("====================================")
 	}
 
 	return nil
