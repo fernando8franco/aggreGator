@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/fernando8franco/aggreGator/internal/database"
@@ -27,7 +28,7 @@ func HandlerAddFeed(s *state, cmd command, user database.User) error {
 
 	feed, err := s.db.CreateFeed(context.Background(), newFeed)
 	if err != nil {
-		return fmt.Errorf("couldn't create user: %w", err)
+		return fmt.Errorf("couldn't create feed: %w", err)
 	}
 
 	newFeedFollow := database.CreateFeedFollowParams{
@@ -69,6 +70,36 @@ func HandlerFeeds(s *state, cmd command) error {
 	return nil
 }
 
+func HandleBrowse(s *state, cmd command, user database.User) error {
+	if len(cmd.Arguments) > 1 {
+		return fmt.Errorf("usage: %v <limit>", cmd.Name)
+	}
+
+	limit := 2
+	if len(cmd.Arguments) == 1 {
+		if specifiedLimit, err := strconv.Atoi(cmd.Arguments[0]); err == nil {
+			limit = specifiedLimit
+		} else {
+			return fmt.Errorf("invalid limit: %w", err)
+		}
+	}
+
+	getPostsForUserParams := database.GetPostsForUserParams{
+		UserID: user.ID,
+		Limit:  int32(limit),
+	}
+	posts, err := s.db.GetPostsForUser(context.Background(), getPostsForUserParams)
+	if err != nil {
+		return fmt.Errorf("couldn't get the posts for user: %w", err)
+	}
+
+	for _, post := range posts {
+		printPost(post)
+	}
+
+	return nil
+}
+
 func printFeed(feed database.Feed) {
 	fmt.Printf("* ID:            %s\n", feed.ID)
 	fmt.Printf("* Created:       %v\n", feed.CreatedAt)
@@ -76,4 +107,13 @@ func printFeed(feed database.Feed) {
 	fmt.Printf("* Name:          %s\n", feed.Name)
 	fmt.Printf("* URL:           %s\n", feed.Url)
 	fmt.Printf("* UserID:        %s\n", feed.UserID)
+}
+
+func printPost(post database.GetPostsForUserRow) {
+	fmt.Printf("* ID:                %s\n", post.ID)
+	fmt.Printf("* Title:             %s\n", post.Title.String)
+	fmt.Printf("* Url:               %s\n", post.Url)
+	fmt.Printf("* Published At:      %s\n", post.PublishedAt.Time)
+	fmt.Printf("* Feed Name:         %s\n", post.FeedName)
+	fmt.Println("================================================")
 }
