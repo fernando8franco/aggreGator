@@ -2,10 +2,15 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/xml"
 	"fmt"
 	"html"
+	"log"
 	"net/http"
+	"time"
+
+	"github.com/fernando8franco/aggreGator/internal/database"
 )
 
 type RSSFeed struct {
@@ -54,16 +59,34 @@ func fecthFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	return &feed, nil
 }
 
-func printAggFeed(feed *RSSFeed) {
-	fmt.Println("Feed:")
-	fmt.Printf("Title: %s\n", feed.Channel.Title)
-	fmt.Printf("Link: %s\n", feed.Channel.Link)
-	fmt.Printf("Description: %s\n", feed.Channel.Description)
-	for i, item := range feed.Channel.Item {
-		fmt.Printf("Item no.%v:\n", i)
-		fmt.Printf(" * Title: %v\n", item.Title)
-		fmt.Printf(" * Link: %v\n", item.Link)
-		fmt.Printf(" * Description: %v\n", item.Description)
-		fmt.Printf(" * Publication Date: %v\n", item.PubDate)
+func scrapeFeeds(s *state) error {
+	nextFeed, err := s.db.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		return fmt.Errorf("couldn't get the next feed: %w", err)
 	}
+
+	markFeedFetched := database.MarkFeedFetchedParams{
+		LastFetchedAt: sql.NullTime{
+			Time:  time.Now().UTC(),
+			Valid: true,
+		},
+		UpdatedAt: time.Now().UTC(),
+		ID:        nextFeed.ID,
+	}
+	_, err = s.db.MarkFeedFetched(context.Background(), markFeedFetched)
+	if err != nil {
+		return fmt.Errorf("couldn't get the mark the feed %s: %w", nextFeed.Name, err)
+	}
+
+	feedData, err := fecthFeed(context.Background(), nextFeed.Url)
+	if err != nil {
+		return fmt.Errorf("couldn't collect feed %s: %w", nextFeed.Name, err)
+	}
+
+	for _, item := range feedData.Channel.Item {
+		fmt.Printf("Found post: %s\n", item.Title)
+	}
+	log.Printf("Feed %s collected, %v posts found", nextFeed.Name, len(feedData.Channel.Item))
+
+	return nil
 }
