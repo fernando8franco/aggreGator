@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/fernando8franco/aggreGator/internal/config"
-	"github.com/fernando8franco/aggreGator/internal/database"
+	"github.com/fernando8franco/gator/internal/config"
+	"github.com/fernando8franco/gator/internal/database"
 	_ "github.com/lib/pq"
 )
 

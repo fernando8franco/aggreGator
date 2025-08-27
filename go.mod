@@ -1,4 +1,4 @@
-module github.com/fernando8franco/aggreGator
+module github.com/fernando8franco/gator
 
 go 1.24.0
 
